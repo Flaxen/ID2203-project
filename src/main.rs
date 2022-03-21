@@ -13,7 +13,7 @@ use serde::{Serialize, Deserialize};
 use std::{thread, time};    
 
 
-
+// node struct. mostly used for getting id and peers from command line
 #[derive(Debug, StructOpt, Serialize, Deserialize)]
 struct Node {
     
@@ -24,6 +24,7 @@ struct Node {
     peers: Vec<u64>,
 }
 
+// kv struct for the store
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct KeyValue {
     pub key: String,
@@ -32,47 +33,41 @@ pub struct KeyValue {
 
 #[tokio::main]
 async fn main() {
-    
-    let node = Node::from_args();
-    
-    // configuration with id 1 and the following cluster
+    let node = Node::from_args();    
     
     // TODO: what does the config do? initializes sp struct. look into moving to config files
-    let configuration_id = node.id;
-    let _cluster = vec![1, 2, 3];
-    
     // pid and peers set using commandline
+    let configuration_id = node.id;
+    // let _cluster = vec![1, 2, 3]; // unsure what this did to begin with tbh
 
     let mut sp_config = SequencePaxosConfig::default();
     sp_config.set_configuration_id(configuration_id.try_into().unwrap());
     sp_config.set_pid(node.id);
     sp_config.set_peers(node.peers.to_vec());
     
-    let storage = MemoryStorage::<KeyValue, ()>::default(); // TODO: look into snapshots later on
-    // TODO: sp was mutable before. check if needed later on? 
-    let sp = SequencePaxos::with(sp_config, storage);  // local sequence paxos instance, check
+    let storage = MemoryStorage::<KeyValue, ()>::default(); // TODO: "possibly" look into snapshots later on
+    let sp = SequencePaxos::with(sp_config, storage);
 
     let mut ble_config = BLEConfig::default();
     ble_config.set_pid(node.id);
     ble_config.set_peers(node.peers.to_vec());
-    ble_config.set_hb_delay(40);     // a leader timeout of 20 ticks
+    ble_config.set_hb_delay(40);
     
     let ble = BallotLeaderElection::with(ble_config);
     
     //need explicit sq instance ownership. use channels
-    // TODO: receiver was mut before. check if needed later on?
     let (sender1, receiver) = mpsc::channel(32);
     let sender2 = sender1.clone();
     let sender3 = sender1.clone();
     let sender4 = sender1.clone();
     let sender5 = sender1.clone();
     
-    // thread for managing local sp instance
+    // thread for managing local sp and ble instances
     tokio::spawn(async move {
         sp_command_manager(sp, receiver, ble).await;
     });
 
-    // thread for calling sending messages
+    // thread for calling the sending of outgoing sp & ble messages
     tokio::spawn(async move {
         periodically_send_outgoing_msgs(sender1).await;
     });
@@ -82,18 +77,16 @@ async fn main() {
         command_line_listener(sender3, &node.id).await;
     });
 
-    // thread for BLE time checks
+    // thread for ble time checks
     tokio::spawn(async move {
         ble_timer(sender4).await;
     });
 
+    // thread for ble network communication
     tokio::spawn(async move {
         ble_net(sender5, &node.id).await;
     });
  
-
-    // start of networking code. TODO: move to seperate function?
-    //let node = Node::from_args(); moved to top for config copying node id.
     let mut listen_addr: String = "127.0.0.1:".to_owned();
     let listen_port: u64 = 50000 + node.id;
     listen_addr.push_str(&listen_port.to_string().to_owned()); 
@@ -107,7 +100,6 @@ async fn main() {
         let sender_n = sender2.clone();
     
         tokio::spawn(async move {
-            
             handle_reads(socket, node.id, sender_n).await;
         });
     }
@@ -130,17 +122,10 @@ async fn handle_reads(read_socket: TcpStream, _id: u64, sender: mpsc::Sender<(&s
             println!("MESSAGES STARTING GET TOO BIG, BUFFER NOT BIG ENOUGH"); //FIXME: any better solutions than fixed buffer?
         }
 
-        //let msg_dec: Message<KeyValue, ()> = bincode::deserialize(&buffer[..n]).unwrap();
-        //TODO: no need to deserialize if we send buffer
-        //println!("Id {} got message: {:?}", id, msg_dec);
-
-        // sp.handle(msg_dec);
         sender.send(("handle", (&buffer[..n]).to_vec())).await.unwrap();
     }
-    
 }
 
-// sends message TODO: look into having one tread manage all sends instead of multiple threads a.la tokio channeling?
 async fn periodically_send_outgoing_msgs(sender: mpsc::Sender<(&str, Vec<u8>)>) {
     // periodically check outgoing messages and send all in list
     loop {
@@ -167,7 +152,7 @@ async fn sp_command_manager(mut sp: SequencePaxos<KeyValue, (), MemoryStorage<Ke
                 sp.handle(msg);
             }
             ("send_outgoing", ..) => {
-                // send seqpax messages
+                // send sequence paxos messages
                 for out_msg in sp.get_outgoing_msgs() {
                     // we send message to someone else. receiveer should be pid which we can add to port for our communication protocol
                     let receiver = out_msg.to;
@@ -177,18 +162,15 @@ async fn sp_command_manager(mut sp: SequencePaxos<KeyValue, (), MemoryStorage<Ke
             
                     let msg_enc: Vec<u8> = bincode::serialize(&out_msg).unwrap();
                     writer.write_all(&msg_enc).await.unwrap();
-                    //println!("actually sent a message");
                 }
                 // send ble messages
                 for out_msg in ble.get_outgoing_msgs() {
                     let receiver = out_msg.to;
-
                     let stream = TcpStream::connect(format!("127.0.0.1:{}", 60000 + receiver)).await.unwrap();
                     let (_reader, mut writer) = io::split(stream);
             
                     let msg_enc: Vec<u8> = bincode::serialize(&out_msg).unwrap();
                     writer.write_all(&msg_enc).await.unwrap();
-                    //println!("actually sent a message");
                 }
             }
             ("read", key_enc) => {
@@ -200,15 +182,10 @@ async fn sp_command_manager(mut sp: SequencePaxos<KeyValue, (), MemoryStorage<Ke
 
                 match decided {
                     Some(vec) => {
-                        // tokio::spawn(async move  {
-                            write_res_to_cmd(vec.to_vec(), key).await;
-                        // });
+                        write_res_to_cmd(vec.to_vec(), key).await;
                     },
                     _ => println!("EROEROEROEROEROER"),
                 }
-
-                // find_and_print_kv(key, sp.read_entries(..sp.storage.get_log_len()));
-
             },
             ("write", kv_enc) => {
                 let kv: KeyValue = bincode::deserialize(&kv_enc).unwrap();
@@ -218,8 +195,6 @@ async fn sp_command_manager(mut sp: SequencePaxos<KeyValue, (), MemoryStorage<Ke
             },
             ("leader", ..) => {
                 if let Some(leader) = ble.tick() {
-                    // println!("DOING BLE TICK");
-                    // a new leader is elected, pass it to SequencePaxos.
                     sp.handle_leader(leader);
                 }
             }
@@ -234,8 +209,9 @@ async fn sp_command_manager(mut sp: SequencePaxos<KeyValue, (), MemoryStorage<Ke
     }
 }
 
+// listens for read and write commands from terminal
 async fn command_line_listener(sender: mpsc::Sender<(&str, Vec<u8>)>, id: &u64) {
-    // use std::io;
+    // connection for terminal on port [65k, ..)
     let mut listen_addr: String = "127.0.0.1:".to_owned();
     let listen_port: u64 = 65000 + id;
     listen_addr.push_str(&listen_port.to_string().to_owned()); 
@@ -264,11 +240,7 @@ async fn command_line_listener(sender: mpsc::Sender<(&str, Vec<u8>)>, id: &u64) 
                     sender.send(("read", bincode::serialize(&String::from(v[1])).unwrap())).await.unwrap();
                 },
                 "write" => {
-                    // make and send keyvalue
-                    let kkkey: String = v[1].to_string();
-                    // println!("HEAR YE HEAR YE, KEY IS:{:?}:", kkkey.as_bytes());
-                    let kv = KeyValue{key: String::from(v[1]), value: v[2].trim().parse().expect("Value needs to be a number!")};
-                    // println!("HEAR YE HEAR YE, KV.KEY IS:{:?}:", kv.key.as_bytes());
+                    let kv = KeyValue{key: String::from(v[1].to_string()), value: v[2].trim().parse().expect("Value needs to be a number!")};
 
                     sender.send(("write", bincode::serialize(&kv).unwrap())).await.unwrap();
                 },
@@ -289,11 +261,8 @@ async fn ble_net(sender: mpsc::Sender<(&str, Vec<u8>)>, id: &u64) {
     println!("Listening for ble");
     
     loop {
-        let (socket, _) = listener.accept().await.unwrap();
-        // let sender_n = sender.clone();
-    
+        let (socket, _) = listener.accept().await.unwrap();    
         let (mut reader, _) = io::split(socket);
-    
         let mut buffer = vec![1; 128];
         loop {
             let n = reader.read(&mut buffer).await.unwrap();
@@ -306,11 +275,6 @@ async fn ble_net(sender: mpsc::Sender<(&str, Vec<u8>)>, id: &u64) {
                 println!("MESSAGES STARTING GET TOO BIG, BUFFER NOT BIG ENOUGH"); //FIXME: any better solutions than fixed buffer?
             }
     
-            // let msg_dec: BLEMessage = bincode::deserialize(&buffer[..n]).unwrap();
-            //TODO: no need to deserialize if we send buffer
-            //println!("got BLE message: {:?}", msg_dec);
-    
-            // sp.handle(msg_dec);
             sender.send(("ble_handle", (&buffer[..n]).to_vec())).await.unwrap();
         }
     }
@@ -320,35 +284,31 @@ use omnipaxos_core::util::LogEntry::{self, Decided};
 async fn write_res_to_cmd(vec: Vec<LogEntry<'_, KeyValue, ()>>, key: String) {
     // prepare stream for reply to command window
     let stream = TcpStream::connect(format!("127.0.0.1:{}", 65000)).await.unwrap();
-    let (_reader, mut writer) = tokio::io::split(stream);    
+    let (_reader, mut writer) = tokio::io::split(stream);  
+    
+    // loop backwards through decided
     let mut index = vec.len()-1;
-    // let response = format!("got: {:?}", vec);
     let mut response = String::new();
-    response.push_str(format!("the key provided by cmd is >{:?}<", key.as_bytes()).as_str());
-    let mut end = false;
+    let mut found_key = false;
     loop {
 
         match vec[index] {
             Decided(kv) => {
                 if kv.key == key {
-                    response.push_str(format!("key: >{:?}<\r\n", kv).as_str());
-                    // break;
-                    end = true;
+                    response.push_str(format!("{}", kv.value).as_str());
+                    found_key = true;
                 }
             },
-
-            _ => println!("nothing now, trying more"),
-            // response.push_str(format!("got some error here lollers").as_str())
+            _ => println!("nothing now, checking next"),
         };
-        
-        // response.push_str(format!("some elem: {:?}\n", vec[index]).as_str());
-        if index == 0 || end {
-            response.push_str(format!("     end    ").as_str());
+
+        if index == 0 || found_key {
             break;
         }
         index-=1;
     }
+
+    // write found message, if nothing found error is thrown in command_manager. nothing shown here
     let msg_enc: Vec<u8> = bincode::serialize(&response).unwrap();
     writer.write_all(&msg_enc).await.unwrap();
-    println!("GOT HERE MADAFAKA");
 }

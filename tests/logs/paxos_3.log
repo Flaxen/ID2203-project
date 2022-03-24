@@ -1,17 +1,22 @@
-Mar 21 20:17:41.013 INFO Ballot Leader Election componentMar 21 20:17:44.922 DEBG Newly elected leader: Ballot { n: 0, priority: 0, pid: 0 }
-Mar 21 20:17:46.581 DEBG Newly elected leader: Ballot { n: 0, priority: 0, pid: 3 }
-Mar 21 20:17:46.933 DEBG Handling promise from 1 in Prepare phase
-Mar 21 20:17:47.166 DEBG Self role Leader, phase Accept. Incoming message Promise Accept from 2
-ar 21 20:17:46.583 DEBG Received a majority of heartbeats [(Ballot { n: 0, priority: 0, pid: 1 }, true), (Ballot { n: 0, priority: 0, pid: 2 }, true)]
-Mar 21 20:17:46.585 DEBG BLE 3, New Leader elected: Ballot { n: 0, priority: 0, pid: 3 }
-Mar 21 20:17:48.359 DEBG Received a majority of heartbeats [(Ballot { n: 0, priority: 0, pid: 1 }, true), (Ballot { n: 0, priority: 0, pid: 2 }, true)]
-Mar 21 20:17:50.195 WARN Got late response, round 4, current delay 40, ballot Ballot { n: 0, priority: 0, pid: 1 }
-Mar 21 20:17:50.197 DEBG Received a majority of heartbeats [(Ballot { n: 0, priority: 0, pid: 1 }, true), (Ballot { n: 0, priority: 0, pid: 2 }, true)]
-Mar 21 20:17:51.718 WARN Got late response, round 5, current delay 40, ballot Ballot { n: 0, priority: 0, pid: 1 }
-Mar 21 20:17:52.103 DEBG Received a majority of heartbeats [(Ballot { n: 0, priority: 0, pid: 2 }, true)]
-Mar 21 20:17:53.543 WARN Got late response, round 6, current delay 40, ballot Ballot { n: 0, priority: 0, pid: 1 }
-Mar 21 20:17:53.898 DEBG Received a majority of heartbeats [(Ballot { n: 0, priority: 0, pid: 2 }, true)]
-Mar 21 20:17:55.843 DEBG Received a majority of heartbeats [(Ballot { n: 0, priority: 0, pid: 2 }, true)]
-Mar 21 20:17:57.290 WARN Got late response, round 8, current delay 40, ballot Ballot { n: 0, priority: 0, pid: 1 }
-Mar 21 20:17:57.664 DEBG Received a majority of heartbeats [(Ballot { n: 0, priority: 0, pid: 1 }, true), (Ballot { n: 0, priority: 0, pid: 2 }, true)]
-Mar 21 20:17:59.432 DEBG Received a majority of heartbeats [(Ballot { n: 0, priority: 0, pid: 2 }, true)]
+Mar 23 18:14:15.141 INFO Ballot Leader Election componentMar 23 18:14:19.133 DEBG Newly elected leader: Ballot { n: 0, priority: 0, pid: 0 }
+Mar 23 18:14:20.897 DEBG Newly elected leader: Ballot { n: 0, priority: 0, pid: 3 }
+Mar 23 18:14:21.635 DEBG Handling promise from 1 in Prepare phase
+Mar 23 18:14:21.729 DEBG Self role Leader, phase Accept. Incoming message Promise Accept from 2
+ar 23 18:14:20.891 DEBG Received a majority of heartbeats [(Ballot { n: 0, priority: 0, pid: 1 }, true), (Ballot { n: 0, priority: 0, pid: 2 }, true)]
+Mar 23 18:14:20.903 DEBG BLE 3, New Leader elected: Ballot { n: 0, priority: 0, pid: 3 }
+Mar 23 18:14:23.088 DEBG Received a majority of heartbeats [(Ballot { n: 0, priority: 0, pid: 1 }, true), (Ballot { n: 0, priority: 0, pid: 2 }, true)]
+Mar 23 18:14:24.764 DEBG Received a majority of heartbeats [(Ballot { n: 0, priority: 0, pid: 1 }, true), (Ballot { n: 0, priority: 0, pid: 2 }, true)]
+Mar 23 18:14:26.694 DEBG Received a majority of heartbeats [(Ballot { n: 0, priority: 0, pid: 1 }, true), (Ballot { n: 0, priority: 0, pid: 2 }, true)]
+Mar 23 18:14:28.774 DEBG Received a majority of heartbeats [(Ballot { n: 0, priority: 0, pid: 1 }, true), (Ballot { n: 0, priority: 0, pid: 2 }, true)]
+Mar 23 18:14:30.609 DEBG Received a majority of heartbeats [(Ballot { n: 0, priority: 0, pid: 1 }, true), (Ballot { n: 0, priority: 0, pid: 2 }, true)]
+Mar 23 18:14:32.572 DEBG Received a majority of heartbeats [(Ballot { n: 0, priority: 0, pid: 1 }, true), (Ballot { n: 0, priority: 0, pid: 2 }, true)]
+Mar 23 18:14:34.448 DEBG Received a majority of heartbeats [(Ballot { n: 0, priority: 0, pid: 1 }, true), (Ballot { n: 0, priority: 0, pid: 2 }, true)]
+Mar 23 18:14:36.414 DEBG Received a majority of heartbeats [(Ballot { n: 0, priority: 0, pid: 1 }, true), (Ballot { n: 0, priority: 0, pid: 2 }, true)]
+Mar 23 18:14:38.199 WARN Got late response, round 11, current delay 40, ballot Ballot { n: 0, priority: 0, pid: 1 }
+Mar 23 18:14:38.202 DEBG Received a majority of heartbeats [(Ballot { n: 0, priority: 0, pid: 1 }, true), (Ballot { n: 0, priority: 0, pid: 2 }, true)]
+Mar 23 18:14:40.099 DEBG Received a majority of heartbeats [(Ballot { n: 0, priority: 0, pid: 2 }, true)]
+Mar 23 18:14:41.886 DEBG Received a majority of heartbeats [(Ballot { n: 0, priority: 0, pid: 1 }, true), (Ballot { n: 0, priority: 0, pid: 2 }, true)]
+Mar 23 18:14:43.703 DEBG Received a majority of heartbeats [(Ballot { n: 0, priority: 0, pid: 1 }, true), (Ballot { n: 0, priority: 0, pid: 2 }, true)]
+Mar 23 18:14:45.629 DEBG Received a majority of heartbeats [(Ballot { n: 0, priority: 0, pid: 1 }, true), (Ballot { n: 0, priority: 0, pid: 2 }, true)]
+Mar 23 18:14:47.716 DEBG Received a majority of heartbeats [(Ballot { n: 0, priority: 0, pid: 1 }, true), (Ballot { n: 0, priority: 0, pid: 2 }, true)]
+Mar 23 18:14:49.650 DEBG Received a majority of heartbeats [(Ballot { n: 0, priority: 0, pid: 1 }, true), (Ballot { n: 0, priority: 0, pid: 2 }, true)]

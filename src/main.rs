@@ -35,7 +35,6 @@ pub struct KeyValue {
 async fn main() {
     let node = Node::from_args();    
     
-    // TODO: what does the config do? initializes sp struct. look into moving to config files
     // pid and peers set using commandline
     let configuration_id = node.id;
     // let _cluster = vec![1, 2, 3]; // unsure what this did to begin with tbh
@@ -45,7 +44,7 @@ async fn main() {
     sp_config.set_pid(node.id);
     sp_config.set_peers(node.peers.to_vec());
     
-    let storage = MemoryStorage::<KeyValue, ()>::default(); // TODO: "possibly" look into snapshots later on
+    let storage = MemoryStorage::<KeyValue, ()>::default(); // TODO: look into snapshots if there is time
     let sp = SequencePaxos::with(sp_config, storage);
 
     let mut ble_config = BLEConfig::default();
@@ -152,25 +151,34 @@ async fn sp_command_manager(mut sp: SequencePaxos<KeyValue, (), MemoryStorage<Ke
                 sp.handle(msg);
             }
             ("send_outgoing", ..) => {
+
                 // send sequence paxos messages
                 for out_msg in sp.get_outgoing_msgs() {
                     // we send message to someone else. receiveer should be pid which we can add to port for our communication protocol
                     let receiver = out_msg.to;
+                    match TcpStream::connect(format!("127.0.0.1:{}", 50000 + receiver)).await {
+                        Ok(stream) => {
+                            let (_reader, mut writer) = io::split(stream);
                     
-                    let stream = TcpStream::connect(format!("127.0.0.1:{}", 50000 + receiver)).await.unwrap();
-                    let (_reader, mut writer) = io::split(stream);
-            
-                    let msg_enc: Vec<u8> = bincode::serialize(&out_msg).unwrap();
-                    writer.write_all(&msg_enc).await.unwrap();
+                            let msg_enc: Vec<u8> = bincode::serialize(&out_msg).unwrap();
+                            writer.write_all(&msg_enc).await.unwrap();
+                        },
+                        Err(_) => println!("Could not open sp message connection to some or more nodes. Will try to send next call"),
+                    }
                 }
-                // send ble messages
+
                 for out_msg in ble.get_outgoing_msgs() {
                     let receiver = out_msg.to;
-                    let stream = TcpStream::connect(format!("127.0.0.1:{}", 60000 + receiver)).await.unwrap();
-                    let (_reader, mut writer) = io::split(stream);
-            
-                    let msg_enc: Vec<u8> = bincode::serialize(&out_msg).unwrap();
-                    writer.write_all(&msg_enc).await.unwrap();
+                    match TcpStream::connect(format!("127.0.0.1:{}", 60000 + receiver)).await {
+                        Ok(stream) => {
+                        // send ble messages
+                            let (_reader, mut writer) = io::split(stream);
+                            
+                            let msg_enc: Vec<u8> = bincode::serialize(&out_msg).unwrap();
+                            writer.write_all(&msg_enc).await.unwrap();
+                        },
+                        Err(_) => println!("Could not open ble message connection. Will try to send next call"),
+                    }
                 }
             }
             ("read", key_enc) => {
